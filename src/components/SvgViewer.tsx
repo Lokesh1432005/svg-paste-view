@@ -214,6 +214,103 @@ export default function SvgViewer() {
     URL.revokeObjectURL(url);
   };
 
+  const getSvgPixelSize = (svgEl: SVGSVGElement): { width: number; height: number } => {
+    const toPx = (v: string | null): number | null => {
+      if (!v) return null;
+      const m = v.trim().match(/^([\d.]+)(px)?$/);
+      if (m) return Math.max(1, Math.round(parseFloat(m[1])));
+      return null;
+    };
+    let width = toPx(svgEl.getAttribute("width"));
+    let height = toPx(svgEl.getAttribute("height"));
+    const vb = svgEl.getAttribute("viewBox");
+    if ((!width || !height) && vb) {
+      const parts = vb.split(/\s+/).map((n) => parseFloat(n));
+      if (parts.length === 4 && parts.every((n) => !Number.isNaN(n))) {
+        const [, , w, h] = parts;
+        width = width || Math.max(1, Math.round(w));
+        height = height || Math.max(1, Math.round(h));
+      }
+    }
+    if (!width || !height) {
+      try {
+        // Fallback to screen size divided by zoom factor
+        const rect = svgEl.getBoundingClientRect();
+        width = width || Math.max(1, Math.round(rect.width / Math.max(zoom || 1, 0.01)));
+        height = height || Math.max(1, Math.round(rect.height / Math.max(zoom || 1, 0.01)));
+      } catch {
+        width = width || 1024;
+        height = height || 1024;
+      }
+    }
+    return { width: width!, height: height! };
+  };
+
+  const downloadPng = async () => {
+    const host = svgHostRef.current;
+    if (!host) return;
+    const svgEl = host.querySelector("svg");
+    if (!svgEl) return;
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    // Remove internal data attributes used for editor
+    const removeDataAttrs = (el: Element) => {
+      for (const attr of Array.from(el.attributes)) {
+        if (attr.name.startsWith("data-lv-")) {
+          el.removeAttribute(attr.name);
+        }
+      }
+      for (const child of Array.from(el.children)) removeDataAttrs(child);
+    };
+    removeDataAttrs(clone);
+    if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    if (!clone.getAttribute("xmlns:xlink")) clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+    const { width, height } = getSvgPixelSize(svgEl as SVGSVGElement);
+    clone.setAttribute("width", String(width));
+    clone.setAttribute("height", String(height));
+
+    const serialized = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const image = new Image();
+    image.decoding = "sync" as any;
+    image.onload = () => {
+      const scale = 2; // export at 2x for clarity
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        toast.error("Canvas not supported");
+        return;
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.drawImage(image, 0, 0);
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) {
+          URL.revokeObjectURL(url);
+          toast.error("Failed to export PNG");
+          return;
+        }
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = "image.png";
+        a.click();
+        URL.revokeObjectURL(pngUrl);
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      toast.error("Could not load SVG for PNG export");
+    };
+    image.src = url;
+  };
+
   const clearAll = () => {
     setRawSvg("");
     setSelectedEl(null);
@@ -656,7 +753,8 @@ export default function SvgViewer() {
 
           <div className="flex flex-wrap items-center gap-2 justify-end">
             <Button variant="outline" onClick={copyCode} disabled={!safeSvg}><Copy />Copy</Button>
-            <Button variant="outline" onClick={downloadSvg} disabled={!safeSvg}><Download />Download</Button>
+            <Button variant="outline" onClick={downloadSvg} disabled={!safeSvg}><Download />SVG</Button>
+            <Button variant="outline" onClick={downloadPng} disabled={!safeSvg}><Download />PNG</Button>
             <Button variant="hero" onClick={() => toast("Tip: Click an element to select, drag the box to move, and use the handles to resize.")}>Tips</Button>
           </div>
         </CardContent>
