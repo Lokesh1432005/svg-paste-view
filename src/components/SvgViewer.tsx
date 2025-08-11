@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
 import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, RefreshCw } from "lucide-react";
@@ -80,6 +81,16 @@ export default function SvgViewer() {
 
   const [selectedEl, setSelectedEl] = useState<SVGGraphicsElement | null>(null);
   const [overlay, setOverlay] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [textValue, setTextValue] = useState<string>("");
+  const [fillValue, setFillValue] = useState<string>("");
+  const [strokeValue, setStrokeValue] = useState<string>("");
+  const [fontSizeValue, setFontSizeValue] = useState<string>("");
+  const [fontFamilyValue, setFontFamilyValue] = useState<string>("");
+  const isSelectedTextLike = useMemo(() => {
+    if (!selectedEl) return false;
+    const tag = selectedEl.tagName.toLowerCase();
+    return tag === "text" || tag === "tspan";
+  }, [selectedEl]);
 
   const safeSvg = useMemo(() => sanitizeSvg(rawSvg), [rawSvg]);
 
@@ -213,9 +224,6 @@ export default function SvgViewer() {
           typeof (el as SVGGraphicsElement).getBBox === "function"
         ) {
           setSelectedEl(el as SVGGraphicsElement);
-          // Ensure default transforms exist
-          const t = getTransforms(el);
-          setTransforms(el, t);
           break;
         }
         el = el.parentElement;
@@ -253,6 +261,98 @@ export default function SvgViewer() {
       document.removeEventListener("scroll", onResize, true);
     };
   }, [selectedEl, recomputeOverlay]);
+
+  // Populate inspector when an element is selected
+  useEffect(() => {
+    if (!selectedEl) {
+      setTextValue("");
+      setFillValue("");
+      setStrokeValue("");
+      setFontSizeValue("");
+      setFontFamilyValue("");
+      return;
+    }
+    try {
+      const element = selectedEl as unknown as Element;
+      const cs = window.getComputedStyle(element);
+      const fillAttr = element.getAttribute("fill") || cs.fill || "";
+      const strokeAttr = element.getAttribute("stroke") || cs.stroke || "";
+      setFillValue(fillAttr === "none" ? "" : fillAttr);
+      setStrokeValue(strokeAttr === "none" ? "" : strokeAttr);
+
+      const tag = selectedEl.tagName.toLowerCase();
+      const isTextLikeLocal = tag === "text" || tag === "tspan";
+      if (isTextLikeLocal) {
+        const fsAttr = element.getAttribute("font-size") || cs.fontSize || "";
+        const ffAttr = element.getAttribute("font-family") || cs.fontFamily || "";
+        setTextValue(selectedEl.textContent || "");
+        setFontSizeValue(fsAttr.replace(/[^\d.]+$/, ""));
+        setFontFamilyValue(ffAttr);
+      } else {
+        setTextValue("");
+        setFontSizeValue("");
+        setFontFamilyValue("");
+      }
+    } catch {}
+  }, [selectedEl]);
+
+  const applyDomChange = useCallback((fn: () => void, shouldRewrite = false) => {
+    fn();
+    recomputeOverlay();
+    if (shouldRewrite && autoRewrite) {
+      // Avoid rewriting on every keystroke; small timeout batches rapid changes
+      window.setTimeout(() => {
+        try { rewriteSvgFromDom(); } catch {}
+      }, 150);
+    }
+  }, [recomputeOverlay, autoRewrite, rewriteSvgFromDom]);
+
+  const onTextChange = (value: string) => {
+    setTextValue(value);
+    if (!selectedEl) return;
+    const tag = selectedEl.tagName.toLowerCase();
+    if (tag === "text" || tag === "tspan") {
+      applyDomChange(() => { selectedEl.textContent = value; }, true);
+    }
+  };
+
+  const onFillChange = (value: string) => {
+    setFillValue(value);
+    if (!selectedEl) return;
+    applyDomChange(() => {
+      if (value.trim()) (selectedEl as Element).setAttribute("fill", value.trim());
+      else (selectedEl as Element).removeAttribute("fill");
+    }, true);
+  };
+
+  const onStrokeChange = (value: string) => {
+    setStrokeValue(value);
+    if (!selectedEl) return;
+    applyDomChange(() => {
+      if (value.trim()) (selectedEl as Element).setAttribute("stroke", value.trim());
+      else (selectedEl as Element).removeAttribute("stroke");
+    }, true);
+  };
+
+  const onFontSizeChange = (value: string) => {
+    // accept numeric or with unit, normalize to px when numeric
+    setFontSizeValue(value);
+    if (!selectedEl) return;
+    const normalized = value.trim() ? (/\d$/.test(value.trim()) ? `${value.trim()}px` : value.trim()) : "";
+    applyDomChange(() => {
+      if (normalized) (selectedEl as Element).setAttribute("font-size", normalized);
+      else (selectedEl as Element).removeAttribute("font-size");
+    }, true);
+  };
+
+  const onFontFamilyChange = (value: string) => {
+    setFontFamilyValue(value);
+    if (!selectedEl) return;
+    applyDomChange(() => {
+      if (value.trim()) (selectedEl as Element).setAttribute("font-family", value.trim());
+      else (selectedEl as Element).removeAttribute("font-family");
+    }, true);
+  };
 
   // Drag to move and handle resizing
   useEffect(() => {
@@ -363,6 +463,60 @@ export default function SvgViewer() {
               <Button variant="outline" onClick={clearAll}><Trash2 className="mr-2" />Clear</Button>
             </div>
           </div>
+
+          {selectedEl && (
+            <div className="rounded-md border p-3 bg-muted/10">
+              <div className="text-sm font-medium mb-3 flex items-center justify-between">
+                <span>Inspector</span>
+                <span className="text-muted-foreground">Selected: &lt;{selectedEl.tagName.toLowerCase()}&gt;</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {isSelectedTextLike && (
+                  <>
+                    <div className="space-y-1">
+                      <Label htmlFor="inspector-text">Text</Label>
+                      <Input id="inspector-text" value={textValue} onChange={(e) => onTextChange(e.target.value)} placeholder="Edit text" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="inspector-font-size">Font size (px)</Label>
+                      <Input id="inspector-font-size" inputMode="numeric" pattern="[0-9]*" value={fontSizeValue} onChange={(e) => onFontSizeChange(e.target.value)} placeholder="e.g. 16" />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label htmlFor="inspector-font-family">Font family</Label>
+                      <Input
+                        id="inspector-font-family"
+                        value={fontFamilyValue}
+                        onChange={(e) => onFontFamilyChange(e.target.value)}
+                        list="font-family-presets"
+                        placeholder="e.g. Inter, Arial, sans-serif"
+                      />
+                      <datalist id="font-family-presets">
+                        <option value="" />
+                        <option value="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" />
+                        <option value="Arial, Helvetica, sans-serif" />
+                        <option value="Helvetica, Arial, sans-serif" />
+                        <option value="Times New Roman, Times, serif" />
+                        <option value="Georgia, serif" />
+                        <option value="Courier New, Courier, monospace" />
+                        <option value="Menlo, Monaco, monospace" />
+                        <option value="monospace" />
+                        <option value="serif" />
+                        <option value="sans-serif" />
+                      </datalist>
+                    </div>
+                  </>
+                )}
+                <div className="space-y-1">
+                  <Label htmlFor="inspector-fill">Fill color</Label>
+                  <Input id="inspector-fill" value={fillValue} onChange={(e) => onFillChange(e.target.value)} placeholder="e.g. #111827 or red" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="inspector-stroke">Stroke color</Label>
+                  <Input id="inspector-stroke" value={strokeValue} onChange={(e) => onStrokeChange(e.target.value)} placeholder="Optional" />
+                </div>
+              </div>
+            </div>
+          )}
 
           <ResizablePanelGroup direction="horizontal" className="w-full h[70vh] sm:h-[70vh] rounded-md border bg-background">
             <ResizablePanel defaultSize={45} minSize={20} className="min-w-0">
