@@ -68,6 +68,22 @@ function setTransforms(el: Element, t: Transforms) {
   );
 }
 
+function normalizeHexColor(input: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  const match = trimmed.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!match) return null;
+  let hex = match[1].toLowerCase();
+  if (hex.length === 3) {
+    hex = hex.split("").map((c) => c + c).join("");
+  }
+  return `#${hex}`;
+}
+
+function hexOrDefault(value: string, fallback = "#000000"): string {
+  return normalizeHexColor(value) ?? fallback;
+}
+
 export default function SvgViewer() {
   const [activeTab, setActiveTab] = useState<string>("upload");
   const [rawSvg, setRawSvg] = useState<string>("");
@@ -277,7 +293,8 @@ export default function SvgViewer() {
       const cs = window.getComputedStyle(element);
       const fillAttr = element.getAttribute("fill") || cs.fill || "";
       const strokeAttr = element.getAttribute("stroke") || cs.stroke || "";
-      setFillValue(fillAttr === "none" ? "" : fillAttr);
+      const normalizedFill = fillAttr === "none" ? "" : (normalizeHexColor(fillAttr) ?? fillAttr);
+      setFillValue(normalizedFill);
       setStrokeValue(strokeAttr === "none" ? "" : strokeAttr);
 
       const tag = selectedEl.tagName.toLowerCase();
@@ -507,8 +524,28 @@ export default function SvgViewer() {
                   </>
                 )}
                 <div className="space-y-1">
-                  <Label htmlFor="inspector-fill">Fill color</Label>
-                  <Input id="inspector-fill" value={fillValue} onChange={(e) => onFillChange(e.target.value)} placeholder="e.g. #111827 or red" />
+                  <Label htmlFor="inspector-fill-hex">Font color (hex)</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      aria-label="Pick font color"
+                      className="h-10 w-10 rounded-md border border-input bg-background"
+                      value={hexOrDefault(fillValue)}
+                      onChange={(e) => onFillChange(e.target.value)}
+                    />
+                    <Input
+                      id="inspector-fill-hex"
+                      value={fillValue}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFillValue(v);
+                        const hx = normalizeHexColor(v);
+                        if (hx) onFillChange(hx);
+                      }}
+                      placeholder="#000000"
+                      pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="inspector-stroke">Stroke color</Label>
