@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
-import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, RefreshCw } from "lucide-react";
+import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, RefreshCw, Sparkles } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { xml } from "@codemirror/lang-xml";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
@@ -548,15 +548,21 @@ export default function SvgViewer() {
 
   return (
     <section aria-labelledby="svg-viewer-heading" className="w-full">
-      <Card ref={containerRef} className="signature-glow border border-border/60">
-        <CardHeader>
-          <CardTitle id="svg-viewer-heading" className="text-xl">SVG Viewer</CardTitle>
+      <Card ref={containerRef} className="signature-glow border border-border/40 bg-card/50 backdrop-blur-sm shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle id="svg-viewer-heading" className="text-xl font-bold bg-gradient-to-r from-hsl(var(--brand)) to-hsl(var(--brand-2)) bg-clip-text text-transparent">
+            SVG Editor
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 animate-fade-in">
+        <CardContent className="space-y-4 animate-fade-in">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="upload" className="flex items-center gap-2"><Upload className="opacity-80" /> Upload</TabsTrigger>
-              <TabsTrigger value="paste" className="flex items-center gap-2"><ClipboardPaste className="opacity-80" /> Paste code</TabsTrigger>
+            <TabsList className="grid grid-cols-2 w-full bg-muted/30 p-1">
+              <TabsTrigger value="upload" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Upload className="h-4 w-4" /> Upload
+              </TabsTrigger>
+              <TabsTrigger value="paste" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <ClipboardPaste className="h-4 w-4" /> Paste code
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -569,14 +575,18 @@ export default function SvgViewer() {
               {null}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={rewriteSvgFromDom}><RefreshCw className="mr-2" />Rewrite code</Button>
-              <Button variant="outline" onClick={clearAll}><Trash2 className="mr-2" />Clear</Button>
+              <Button variant="outline" onClick={rewriteSvgFromDom} className="hover:bg-hsl(var(--brand))/5 hover:border-hsl(var(--brand))/20">
+                <RefreshCw className="mr-2 h-4 w-4" />Rewrite code
+              </Button>
+              <Button variant="outline" onClick={clearAll} className="hover:bg-destructive/5 hover:border-destructive/20 hover:text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />Clear
+              </Button>
             </div>
           </div>
 
-          <ResizablePanelGroup direction="horizontal" className="w-full h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)] rounded-md border bg-background">
+          <ResizablePanelGroup direction="horizontal" className="w-full h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)] rounded-lg border border-border/40 bg-background/50 backdrop-blur-sm shadow-lg">
             <ResizablePanel defaultSize={45} minSize={20} className="min-w-0">
-              <div className="h-full overflow-auto p-3 space-y-3">
+              <div className="h-full overflow-auto p-4 space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Input
@@ -584,17 +594,24 @@ export default function SvgViewer() {
                       accept=".svg,image/svg+xml"
                       onChange={(e) => handleFiles(e.target.files)}
                     />
-                    <Button variant="secondary" onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+                      className="bg-gradient-to-r from-hsl(var(--brand))/10 to-hsl(var(--brand-2))/10 hover:from-hsl(var(--brand))/20 hover:to-hsl(var(--brand-2))/20 border-hsl(var(--brand))/20"
+                    >
                       Choose file
                     </Button>
                   </div>
                   <div
                     onDrop={onDrop}
                     onDragOver={(e) => e.preventDefault()}
-                    className="rounded-md border border-dashed p-6 text-sm text-muted-foreground bg-secondary/40"
+                    className="rounded-lg border-2 border-dashed border-hsl(var(--brand))/20 p-8 text-sm text-muted-foreground bg-gradient-to-br from-hsl(var(--brand))/5 to-hsl(var(--brand-2))/5 hover:border-hsl(var(--brand))/30 transition-colors duration-200"
                     aria-label="Drag and drop SVG file here"
                   >
-                    Drag & drop an SVG file here
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload className="h-8 w-8 text-hsl(var(--brand))/60" />
+                      <span>Drag & drop an SVG file here</span>
+                    </div>
                   </div>
                 </div>
 
@@ -612,16 +629,28 @@ export default function SvgViewer() {
                       />
                     </div>
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="secondary" size="sm" onClick={onPasteRender}><Hand className="mr-2" />Render</Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={onPasteRender}
+                        className="bg-gradient-to-r from-hsl(var(--brand)) to-hsl(var(--brand-2)) text-white hover:opacity-90 transition-opacity"
+                      >
+                        <Hand className="mr-2 h-4 w-4" />Render
+                      </Button>
                     </div>
                   </div>
                 )}
 
                 {selectedEl && (
-                  <div className="rounded-md border p-3 bg-muted/10">
-                    <div className="text-sm font-medium mb-3 flex items-center justify-between">
-                      <span>Inspector</span>
-                      <span className="text-muted-foreground">Selected: &lt;{selectedEl.tagName.toLowerCase()}&gt;</span>
+                  <div className="rounded-lg border border-hsl(var(--brand))/20 p-4 bg-gradient-to-br from-hsl(var(--brand))/5 to-hsl(var(--brand-2))/5 backdrop-blur-sm">
+                    <div className="text-sm font-medium mb-4 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-hsl(var(--brand)) to-hsl(var(--brand-2))"></div>
+                        Inspector
+                      </span>
+                      <span className="text-muted-foreground text-xs font-mono bg-muted/50 px-2 py-1 rounded">
+                        &lt;{selectedEl.tagName.toLowerCase()}&gt;
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {isSelectedTextLike && (
@@ -703,18 +732,32 @@ export default function SvgViewer() {
                 )}
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle withHandle className="bg-border/40 hover:bg-hsl(var(--brand))/20 transition-colors" />
             <ResizablePanel minSize={20} className="min-w-0">
               <div
                 ref={svgHostRef}
-                className={`relative h-full overflow-auto ${transparentBg ? 'bg-checker' : 'bg-card bg-grid-soft'}`}
+                className={`relative h-full overflow-auto ${transparentBg ? 'bg-checker' : 'bg-gradient-to-br from-card/80 to-card bg-grid-soft'}`}
                 onDrop={onDrop}
                 onDragOver={(e) => e.preventDefault()}
               >
-                <div className="absolute left-3 bottom-3 z-20 flex items-center gap-2 rounded-md border bg-background/80 backdrop-blur px-2 py-1">
-                  <Button size="sm" variant="outline" onClick={() => setZoom((z)=> Math.max(0.25, Number((z - 0.1).toFixed(2))))}>-</Button>
-                  <span className="text-xs w-12 text-center">{Math.round(zoom * 100)}%</span>
-                  <Button size="sm" variant="outline" onClick={() => setZoom((z)=> Math.min(4, Number((z + 0.1).toFixed(2))))}>+</Button>
+                <div className="absolute left-4 bottom-4 z-20 flex items-center gap-2 rounded-lg border border-border/40 bg-background/90 backdrop-blur-md px-3 py-2 shadow-lg">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setZoom((z)=> Math.max(0.25, Number((z - 0.1).toFixed(2))))}
+                    className="h-7 w-7 p-0 hover:bg-hsl(var(--brand))/10"
+                  >
+                    -
+                  </Button>
+                  <span className="text-xs w-12 text-center font-mono">{Math.round(zoom * 100)}%</span>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setZoom((z)=> Math.min(4, Number((z + 0.1).toFixed(2))))}
+                    className="h-7 w-7 p-0 hover:bg-hsl(var(--brand))/10"
+                  >
+                    +
+                  </Button>
                 </div>
 
                 {safeSvg ? (
@@ -758,11 +801,37 @@ export default function SvgViewer() {
             </ResizablePanel>
           </ResizablePanelGroup>
 
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Button variant="outline" onClick={copyCode} disabled={!safeSvg}><Copy />Copy</Button>
-            <Button variant="outline" onClick={downloadSvg} disabled={!safeSvg}><Download />SVG</Button>
-            <Button variant="outline" onClick={downloadPng} disabled={!safeSvg}><Download />PNG</Button>
-            <Button variant="hero" onClick={() => toast("Tip: Click an element to select, drag the box to move, and use the handles to resize.")}>Tips</Button>
+          <div className="flex flex-wrap items-center gap-3 justify-end pt-2 border-t border-border/40">
+            <Button 
+              variant="outline" 
+              onClick={copyCode} 
+              disabled={!safeSvg}
+              className="hover:bg-hsl(var(--brand))/5 hover:border-hsl(var(--brand))/20"
+            >
+              <Copy className="mr-2 h-4 w-4" />Copy
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={downloadSvg} 
+              disabled={!safeSvg}
+              className="hover:bg-hsl(var(--brand))/5 hover:border-hsl(var(--brand))/20"
+            >
+              <Download className="mr-2 h-4 w-4" />SVG
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={downloadPng} 
+              disabled={!safeSvg}
+              className="hover:bg-hsl(var(--brand))/5 hover:border-hsl(var(--brand))/20"
+            >
+              <Download className="mr-2 h-4 w-4" />PNG
+            </Button>
+            <Button 
+              onClick={() => toast("Tip: Click an element to select, drag the box to move, and use the handles to resize.")}
+              className="bg-gradient-to-r from-hsl(var(--brand)) to-hsl(var(--brand-2)) text-white hover:opacity-90 transition-opacity"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />Tips
+            </Button>
           </div>
         </CardContent>
       </Card>
