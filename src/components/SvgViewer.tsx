@@ -107,6 +107,7 @@ export default function SvgViewer() {
     const tag = selectedEl.tagName.toLowerCase();
     return tag === "text" || tag === "tspan";
   }, [selectedEl]);
+  const fillColorInputRef = useRef<HTMLInputElement | null>(null);
 
   const safeSvg = useMemo(() => sanitizeSvg(rawSvg), [rawSvg]);
 
@@ -525,16 +526,10 @@ export default function SvgViewer() {
                 )}
                 <div className="space-y-1">
                   <Label htmlFor="inspector-fill-hex">Font color (hex)</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      aria-label="Pick font color"
-                      className="h-10 w-10 rounded-md border border-input bg-background"
-                      value={hexOrDefault(fillValue)}
-                      onChange={(e) => onFillChange(e.target.value)}
-                    />
+                  <div className="relative">
                     <Input
                       id="inspector-fill-hex"
+                      className="pr-12"
                       value={fillValue}
                       onChange={(e) => {
                         const v = e.target.value;
@@ -544,6 +539,23 @@ export default function SvgViewer() {
                       }}
                       placeholder="#000000"
                       pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Pick font color"
+                      title="Pick color"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-md border border-input shadow-sm"
+                      style={{ backgroundColor: hexOrDefault(fillValue) }}
+                      onClick={() => fillColorInputRef.current?.click()}
+                    />
+                    <input
+                      ref={fillColorInputRef}
+                      type="color"
+                      className="sr-only"
+                      value={hexOrDefault(fillValue)}
+                      onChange={(e) => onFillChange(e.target.value)}
+                      tabIndex={-1}
+                      aria-hidden="true"
                     />
                   </div>
                 </div>
