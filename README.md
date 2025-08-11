@@ -3,6 +3,7 @@
 A modern, feature-rich SVG viewer and editor built with React and TypeScript. Upload, paste, edit, and export SVG graphics with an intuitive interface and powerful editing capabilities.
 
 ![SVG Viewer Screenshot](https://img.shields.io/badge/Status-Live-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue) ![React](https://img.shields.io/badge/React-18+-61DAFB) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
+<img width="1698" height="928" alt="Screenshot 2025-08-11 at 20 58 06" src="https://github.com/user-attachments/assets/199c7845-d671-47e7-a143-6040cf8aacdd" />
 
 ## ✨ Features
 
