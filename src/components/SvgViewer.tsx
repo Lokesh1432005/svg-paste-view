@@ -3,12 +3,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
 import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, RefreshCw } from "lucide-react";
+import CodeMirror from "@uiw/react-codemirror";
+import { xml } from "@codemirror/lang-xml";
+import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 
 // --- Helpers: sanitize SVG and transform utilities
 function sanitizeSvg(raw: string): string {
@@ -683,11 +685,14 @@ export default function SvgViewer() {
               ) : (
                 <div className="h-full flex flex-col">
                   <div className="flex-1 min-h-0">
-                    <Textarea
-                      placeholder="Paste SVG markup here (including <svg>...</svg>)"
-                      className="h-full resize-none"
+                    <CodeMirror
                       value={rawSvg}
-                      onChange={(e) => setRawSvg(e.target.value)}
+                      height="100%"
+                      theme={typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? vscodeDark : vscodeLight}
+                      extensions={[xml()]}
+                      onChange={(value) => setRawSvg(value)}
+                      basicSetup={{ lineNumbers: true, highlightActiveLine: true }}
+                      placeholder="Paste SVG markup here (including <svg>...</svg>)"
                     />
                   </div>
                   <div className="flex items-center justify-end gap-2 py-2">
