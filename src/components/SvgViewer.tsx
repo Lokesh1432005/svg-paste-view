@@ -88,8 +88,8 @@ export default function SvgViewer() {
   const [activeTab, setActiveTab] = useState<string>("upload");
   const [rawSvg, setRawSvg] = useState<string>("");
   const [transparentBg, setTransparentBg] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [autoRewrite, setAutoRewrite] = useState(true);
+  const [editMode, setEditMode] = useState(true);
+  const [autoRewrite, setAutoRewrite] = useState(true); // always on; toggle removed
   const [zoom, setZoom] = useState(1);
 
   const containerRef = useRef<HTMLDivElement | null>(null); // glow
@@ -467,14 +467,7 @@ export default function SvgViewer() {
                 <Switch id="transparent-bg" checked={transparentBg} onCheckedChange={setTransparentBg} />
                 <label htmlFor="transparent-bg" className="text-sm text-muted-foreground">Transparent preview</label>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch id="edit-mode" checked={editMode} onCheckedChange={(v) => { setEditMode(v); if (!v) clearSelection(); }} />
-                <label htmlFor="edit-mode" className="text-sm text-muted-foreground">Edit mode (move/resize)</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch id="auto-rewrite" checked={autoRewrite} onCheckedChange={setAutoRewrite} />
-                <label htmlFor="auto-rewrite" className="text-sm text-muted-foreground">Auto update code</label>
-              </div>
+              {null}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={rewriteSvgFromDom}><RefreshCw className="mr-2" />Rewrite code</Button>
@@ -664,7 +657,7 @@ export default function SvgViewer() {
           <div className="flex flex-wrap items-center gap-2 justify-end">
             <Button variant="outline" onClick={copyCode} disabled={!safeSvg}><Copy />Copy</Button>
             <Button variant="outline" onClick={downloadSvg} disabled={!safeSvg}><Download />Download</Button>
-            <Button variant="hero" onClick={() => toast("Tip: In Edit mode, click an element to select, drag the box to move, use handles to resize.")}>Tips</Button>
+            <Button variant="hero" onClick={() => toast("Tip: Click an element to select, drag the box to move, and use the handles to resize.")}>Tips</Button>
           </div>
         </CardContent>
       </Card>
