@@ -657,7 +657,7 @@ export default function SvgViewer() {
             </div>
           )}
 
-          <ResizablePanelGroup direction="horizontal" className="w-full h[70vh] sm:h-[70vh] rounded-md border bg-background">
+          <ResizablePanelGroup direction="horizontal" className="w-full h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)] rounded-md border bg-background">
             <ResizablePanel defaultSize={45} minSize={20} className="min-w-0">
               {activeTab === "upload" ? (
                 <div className="h-full p-3 space-y-3">
