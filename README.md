@@ -1,73 +1,192 @@
-# Welcome to your Lovable project
+# 🎨 SVG Viewer & Editor
 
-## Project info
+A modern, feature-rich SVG viewer and editor built with React and TypeScript. Upload, paste, edit, and export SVG graphics with an intuitive interface and powerful editing capabilities.
 
-**URL**: https://lovable.dev/projects/668fa7b9-14b2-4e3e-b363-fc48fbb9a135
+![SVG Viewer Screenshot](https://img.shields.io/badge/Status-Live-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue) ![React](https://img.shields.io/badge/React-18+-61DAFB) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+### 🚀 **Core Functionality**
+- **Upload SVG Files**: Drag & drop or browse to upload SVG files
+- **Paste SVG Code**: Directly paste SVG markup with syntax highlighting
+- **Live Preview**: Real-time SVG rendering with zoom controls
+- **Export Options**: Download as SVG or PNG (2x resolution)
 
-**Use Lovable**
+### 🎯 **Advanced Editing**
+- **Interactive Selection**: Click any SVG element to select and edit
+- **Visual Inspector**: Edit text, colors, fonts, and stroke properties
+- **Transform Controls**: Drag to move, resize with handles
+- **Live Code Sync**: Changes reflect instantly in both preview and code
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/668fa7b9-14b2-4e3e-b363-fc48fbb9a135) and start prompting.
+### 🎨 **Modern UI/UX**
+- **Dark/Light Theme**: Seamless theme switching with system detection
+- **Glass Morphism**: Modern frosted glass effects and backdrop blur
+- **Brand Gradients**: Beautiful purple-to-cyan gradient accents
+- **Smooth Animations**: Fade-in transitions and hover effects
+- **Responsive Design**: Works perfectly on desktop and mobile
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🛡️ **Security & Performance**
+- **SVG Sanitization**: Automatic removal of malicious scripts and content
+- **Optimized Rendering**: Efficient DOM manipulation and updates
+- **Type Safety**: Full TypeScript coverage for reliability
+- **Accessibility**: ARIA labels and keyboard navigation support
 
-**Use your preferred IDE**
+## 🖼️ Preview
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The application features a clean, modern interface with:
+- **Header**: Branded logo, theme toggle, and navigation
+- **Dual Panel Layout**: Code editor on the left, live preview on the right
+- **Inspector Panel**: Context-sensitive editing controls
+- **Action Bar**: Export, copy, and utility functions
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Tech Stack
 
-Follow these steps:
+- **Framework**: React 18+ with TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Build Tool**: Vite for fast development and building
+- **Code Editor**: CodeMirror with XML syntax highlighting
+- **Icons**: Lucide React for consistent iconography
+- **Animations**: CSS animations + Tailwind transitions
+- **Theme**: CSS custom properties with dark/light modes
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Quick Start
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js 18+ and npm/yarn/bun
+- Git for version control
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+# Clone the repository
+git clone https://github.com/your-username/svg-paste-view.git
+
+# Navigate to project directory
+cd svg-paste-view
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Build for Production
 
-**Use GitHub Codespaces**
+```bash
+# Build optimized production bundle
+npm run build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Preview production build locally
+npm run preview
+```
 
-## What technologies are used for this project?
+## 📖 Usage Guide
 
-This project is built with:
+### 1. **Upload SVG Files**
+- Click "Choose file" or drag & drop SVG files onto the upload area
+- Files are automatically validated and sanitized
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### 2. **Paste SVG Code**
+- Switch to "Paste code" tab
+- Paste your SVG markup in the code editor
+- Click "Render" to preview
 
-## How can I deploy this project?
+### 3. **Edit SVG Elements**
+- Click any element in the preview to select it
+- Use the Inspector panel to modify:
+  - Text content (for text elements)
+  - Fill and stroke colors
+  - Font family and size
+  - Transform properties
 
-Simply open [Lovable](https://lovable.dev/projects/668fa7b9-14b2-4e3e-b363-fc48fbb9a135) and click on Share -> Publish.
+### 4. **Transform Elements**
+- **Move**: Drag the selection box
+- **Resize**: Use the corner and edge handles
+- **Zoom**: Use +/- controls in preview panel
 
-## Can I connect a custom domain to my Lovable project?
+### 5. **Export Your Work**
+- **Copy**: Copy SVG code to clipboard
+- **Download SVG**: Save as optimized SVG file
+- **Download PNG**: Export as high-resolution PNG
 
-Yes, you can!
+## 🎨 Customization
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Theme Configuration
+The app uses CSS custom properties for theming. Modify colors in `src/index.css`:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```css
+:root {
+  --brand: 262 83% 58%;        /* Primary brand color */
+  --brand-2: 198 94% 60%;      /* Secondary brand color */
+  --gradient-primary: linear-gradient(135deg, hsl(var(--brand)) 0%, hsl(var(--brand-2)) 100%);
+}
+```
+
+### Component Styling
+Components use Tailwind CSS with shadcn/ui. Customize in:
+- `tailwind.config.ts` - Theme configuration
+- `src/components/ui/` - Base component styles
+- `src/index.css` - Global styles and utilities
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   ├── SvgViewer.tsx      # Main editor component
+│   └── theme-toggle.tsx   # Theme switching component
+├── hooks/
+│   ├── use-theme.tsx      # Theme management
+│   └── use-toast.ts       # Toast notifications
+├── pages/
+│   ├── Index.tsx          # Main application page
+│   └── NotFound.tsx       # 404 error page
+├── lib/
+│   └── utils.ts           # Utility functions
+├── App.tsx                # Root application component
+├── main.tsx              # Application entry point
+└── index.css             # Global styles and design system
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Use Tailwind CSS for styling
+- Maintain component modularity
+- Add proper type definitions
+- Test your changes thoroughly
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful component library
+- [Lucide](https://lucide.dev/) for the icon set
+- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
+- [CodeMirror](https://codemirror.net/) for the code editor
+- [Vite](https://vitejs.dev/) for the blazing fast build tool
+
+---
+
+<div align="center">
+  <p>Built with ❤️ using React and TypeScript</p>
+  <p>
+    <a href="https://github.com/your-username/svg-paste-view/issues">Report Bug</a> •
+    <a href="https://github.com/your-username/svg-paste-view/issues">Request Feature</a>
+  </p>
+</div>
