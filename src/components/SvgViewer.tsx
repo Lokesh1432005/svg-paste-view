@@ -574,95 +574,10 @@ export default function SvgViewer() {
             </div>
           </div>
 
-          {selectedEl && (
-            <div className="rounded-md border p-3 bg-muted/10">
-              <div className="text-sm font-medium mb-3 flex items-center justify-between">
-                <span>Inspector</span>
-                <span className="text-muted-foreground">Selected: &lt;{selectedEl.tagName.toLowerCase()}&gt;</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {isSelectedTextLike && (
-                  <>
-                    <div className="space-y-1">
-                      <Label htmlFor="inspector-text">Text</Label>
-                      <Input id="inspector-text" value={textValue} onChange={(e) => onTextChange(e.target.value)} placeholder="Edit text" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="inspector-font-size">Font size (px)</Label>
-                      <Input id="inspector-font-size" inputMode="numeric" pattern="[0-9]*" value={fontSizeValue} onChange={(e) => onFontSizeChange(e.target.value)} placeholder="e.g. 16" />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label htmlFor="inspector-font-family">Font family</Label>
-                      <Input
-                        id="inspector-font-family"
-                        value={fontFamilyValue}
-                        onChange={(e) => onFontFamilyChange(e.target.value)}
-                        list="font-family-presets"
-                        placeholder="e.g. Inter, Arial, sans-serif"
-                      />
-                      <datalist id="font-family-presets">
-                        <option value="" />
-                        <option value="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" />
-                        <option value="Arial, Helvetica, sans-serif" />
-                        <option value="Helvetica, Arial, sans-serif" />
-                        <option value="Times New Roman, Times, serif" />
-                        <option value="Georgia, serif" />
-                        <option value="Courier New, Courier, monospace" />
-                        <option value="Menlo, Monaco, monospace" />
-                        <option value="monospace" />
-                        <option value="serif" />
-                        <option value="sans-serif" />
-                      </datalist>
-                    </div>
-                  </>
-                )}
-                <div className="space-y-1">
-                  <Label htmlFor="inspector-fill-hex">Font color (hex)</Label>
-                  <div className="relative">
-                    <Input
-                      id="inspector-fill-hex"
-                      className="pr-12"
-                      value={fillValue}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setFillValue(v);
-                        const hx = normalizeHexColor(v);
-                        if (hx) onFillChange(hx);
-                      }}
-                      placeholder="#000000"
-                      pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Pick font color"
-                      title="Pick color"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-md border border-input shadow-sm"
-                      style={{ backgroundColor: hexOrDefault(fillValue) }}
-                      onClick={() => fillColorInputRef.current?.click()}
-                    />
-                    <input
-                      ref={fillColorInputRef}
-                      type="color"
-                      className="sr-only"
-                      value={hexOrDefault(fillValue)}
-                      onChange={(e) => onFillChange(e.target.value)}
-                      tabIndex={-1}
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="inspector-stroke">Stroke color</Label>
-                  <Input id="inspector-stroke" value={strokeValue} onChange={(e) => onStrokeChange(e.target.value)} placeholder="Optional" />
-                </div>
-              </div>
-            </div>
-          )}
-
           <ResizablePanelGroup direction="horizontal" className="w-full h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)] rounded-md border bg-background">
             <ResizablePanel defaultSize={45} minSize={20} className="min-w-0">
-              {activeTab === "upload" ? (
-                <div className="h-full p-3 space-y-3">
+              <div className="h-full overflow-auto p-3 space-y-3">
+                <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Input
                       type="file"
@@ -682,24 +597,111 @@ export default function SvgViewer() {
                     Drag & drop an SVG file here
                   </div>
                 </div>
-              ) : (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 min-h-0">
-                    <CodeMirror
-                      value={rawSvg}
-                      height="100%"
-                      theme={typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? vscodeDark : vscodeLight}
-                      extensions={[xml()]}
-                      onChange={(value) => setRawSvg(value)}
-                      basicSetup={{ lineNumbers: true, highlightActiveLine: true }}
-                      placeholder="Paste SVG markup here (including <svg>...</svg>)"
-                    />
+
+                {activeTab === "paste" && (
+                  <div className="space-y-2">
+                    <div className="min-h-0">
+                      <CodeMirror
+                        value={rawSvg}
+                        height="280px"
+                        theme={typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? vscodeDark : vscodeLight}
+                        extensions={[xml()]}
+                        onChange={(value) => setRawSvg(value)}
+                        basicSetup={{ lineNumbers: true, highlightActiveLine: true }}
+                        placeholder="Paste SVG markup here (including <svg>...</svg>)"
+                      />
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="secondary" size="sm" onClick={onPasteRender}><Hand className="mr-2" />Render</Button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-end gap-2 py-2">
-                    <Button variant="secondary" size="sm" onClick={onPasteRender}><Hand className="mr-2" />Render</Button>
+                )}
+
+                {selectedEl && (
+                  <div className="rounded-md border p-3 bg-muted/10">
+                    <div className="text-sm font-medium mb-3 flex items-center justify-between">
+                      <span>Inspector</span>
+                      <span className="text-muted-foreground">Selected: &lt;{selectedEl.tagName.toLowerCase()}&gt;</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {isSelectedTextLike && (
+                        <>
+                          <div className="space-y-1">
+                            <Label htmlFor="inspector-text">Text</Label>
+                            <Input id="inspector-text" value={textValue} onChange={(e) => onTextChange(e.target.value)} placeholder="Edit text" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="inspector-font-size">Font size (px)</Label>
+                            <Input id="inspector-font-size" inputMode="numeric" pattern="[0-9]*" value={fontSizeValue} onChange={(e) => onFontSizeChange(e.target.value)} placeholder="e.g. 16" />
+                          </div>
+                          <div className="space-y-1 md:col-span-2">
+                            <Label htmlFor="inspector-font-family">Font family</Label>
+                            <Input
+                              id="inspector-font-family"
+                              value={fontFamilyValue}
+                              onChange={(e) => onFontFamilyChange(e.target.value)}
+                              list="font-family-presets"
+                              placeholder="e.g. Inter, Arial, sans-serif"
+                            />
+                            <datalist id="font-family-presets">
+                              <option value="" />
+                              <option value="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" />
+                              <option value="Arial, Helvetica, sans-serif" />
+                              <option value="Helvetica, Arial, sans-serif" />
+                              <option value="Times New Roman, Times, serif" />
+                              <option value="Georgia, serif" />
+                              <option value="Courier New, Courier, monospace" />
+                              <option value="Menlo, Monaco, monospace" />
+                              <option value="monospace" />
+                              <option value="serif" />
+                              <option value="sans-serif" />
+                            </datalist>
+                          </div>
+                        </>
+                      )}
+                      <div className="space-y-1">
+                        <Label htmlFor="inspector-fill-hex">Font color (hex)</Label>
+                        <div className="relative">
+                          <Input
+                            id="inspector-fill-hex"
+                            className="pr-12"
+                            value={fillValue}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setFillValue(v);
+                              const hx = normalizeHexColor(v);
+                              if (hx) onFillChange(hx);
+                            }}
+                            placeholder="#000000"
+                            pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Pick font color"
+                            title="Pick color"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-md border border-input shadow-sm"
+                            style={{ backgroundColor: hexOrDefault(fillValue) }}
+                            onClick={() => fillColorInputRef.current?.click()}
+                          />
+                          <input
+                            ref={fillColorInputRef}
+                            type="color"
+                            className="sr-only"
+                            value={hexOrDefault(fillValue)}
+                            onChange={(e) => onFillChange(e.target.value)}
+                            tabIndex={-1}
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="inspector-stroke">Stroke color</Label>
+                        <Input id="inspector-stroke" value={strokeValue} onChange={(e) => onStrokeChange(e.target.value)} placeholder="Optional" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel minSize={20} className="min-w-0">
