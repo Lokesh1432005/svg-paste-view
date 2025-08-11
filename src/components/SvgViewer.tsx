@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
-import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, Move3D } from "lucide-react";
+import { Upload, ClipboardPaste, Download, Trash2, Copy, Hand, RefreshCw } from "lucide-react";
 
 // --- Helpers: sanitize SVG and transform utilities
 function sanitizeSvg(raw: string): string {
@@ -22,12 +23,37 @@ function sanitizeSvg(raw: string): string {
 
 type Transforms = { tx: number; ty: number; sx: number; sy: number };
 
-function getTransforms(el: Element): Transforms {
-  const tx = parseFloat((el as HTMLElement).dataset.lvTx || "0");
-  const ty = parseFloat((el as HTMLElement).dataset.lvTy || "0");
-  const sx = parseFloat((el as HTMLElement).dataset.lvSx || "1");
-  const sy = parseFloat((el as HTMLElement).dataset.lvSy || "1");
+function parseTransformAttribute(attr: string | null): Transforms | null {
+  if (!attr) return null;
+  let tx = 0;
+  let ty = 0;
+  let sx = 1;
+  let sy = 1;
+  const translateMatch = attr.match(/translate\(\s*([\-\d.+eE]+)(?:[\s,]+([\-\d.+eE]+))?\s*\)/);
+  if (translateMatch) {
+    tx = parseFloat(translateMatch[1]);
+    ty = translateMatch[2] !== undefined ? parseFloat(translateMatch[2]) : 0;
+  }
+  const scaleMatch = attr.match(/scale\(\s*([\-\d.+eE]+)(?:[\s,]+([\-\d.+eE]+))?\s*\)/);
+  if (scaleMatch) {
+    sx = parseFloat(scaleMatch[1]);
+    sy = scaleMatch[2] !== undefined ? parseFloat(scaleMatch[2]) : sx;
+  }
   return { tx, ty, sx, sy };
+}
+
+function getTransforms(el: Element): Transforms {
+  const ds = (el as HTMLElement).dataset;
+  if (ds.lvTx !== undefined || ds.lvTy !== undefined || ds.lvSx !== undefined || ds.lvSy !== undefined) {
+    const tx = parseFloat(ds.lvTx || "0");
+    const ty = parseFloat(ds.lvTy || "0");
+    const sx = parseFloat(ds.lvSx || "1");
+    const sy = parseFloat(ds.lvSy || "1");
+    return { tx, ty, sx, sy };
+  }
+  const parsed = parseTransformAttribute((el as SVGGraphicsElement).getAttribute("transform"));
+  if (parsed) return parsed;
+  return { tx: 0, ty: 0, sx: 1, sy: 1 };
 }
 
 function setTransforms(el: Element, t: Transforms) {
@@ -46,6 +72,8 @@ export default function SvgViewer() {
   const [rawSvg, setRawSvg] = useState<string>("");
   const [transparentBg, setTransparentBg] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [autoRewrite, setAutoRewrite] = useState(true);
+  const [zoom, setZoom] = useState(1);
 
   const containerRef = useRef<HTMLDivElement | null>(null); // glow
   const svgHostRef = useRef<HTMLDivElement | null>(null); // preview host
@@ -54,6 +82,32 @@ export default function SvgViewer() {
   const [overlay, setOverlay] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
   const safeSvg = useMemo(() => sanitizeSvg(rawSvg), [rawSvg]);
+
+  const rewriteSvgFromDom = useCallback(() => {
+    const host = svgHostRef.current;
+    if (!host) return;
+    const svg = host.querySelector("svg");
+    if (!svg) return;
+    const cloned = svg.cloneNode(true) as SVGSVGElement;
+    // Remove internal data attributes
+    const removeDataAttrs = (el: Element) => {
+      for (const attr of Array.from(el.attributes)) {
+        if (attr.name.startsWith("data-lv-")) {
+          el.removeAttribute(attr.name);
+        }
+      }
+      for (const child of Array.from(el.children)) removeDataAttrs(child);
+    };
+    removeDataAttrs(cloned);
+    if (!cloned.getAttribute("xmlns")) {
+      cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    }
+    const serialized = cloned.outerHTML;
+    const cleaned = sanitizeSvg(serialized);
+    if (cleaned) {
+      setRawSvg(cleaned);
+    }
+  }, []);
 
   // Signature glow motion
   useEffect(() => {
@@ -259,13 +313,16 @@ export default function SvgViewer() {
       mode = "none";
       dir = null;
       window.removeEventListener("pointermove", onPointerMove);
+      if (autoRewrite) {
+        rewriteSvgFromDom();
+      }
     };
 
     window.addEventListener("pointerdown", onPointerDown);
     return () => {
       window.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [editMode, selectedEl, recomputeOverlay]);
+  }, [editMode, selectedEl, recomputeOverlay, autoRewrite, rewriteSvgFromDom]);
 
   const clearSelection = () => {
     setSelectedEl(null);
@@ -278,101 +335,128 @@ export default function SvgViewer() {
         <CardHeader>
           <CardTitle id="svg-viewer-heading" className="text-xl">SVG Viewer</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 animate-fade-in">
+        <CardContent className="space-y-3 animate-fade-in">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="upload" className="flex items-center gap-2"><Upload className="opacity-80" /> Upload</TabsTrigger>
               <TabsTrigger value="paste" className="flex items-center gap-2"><ClipboardPaste className="opacity-80" /> Paste code</TabsTrigger>
             </TabsList>
-            <TabsContent value="upload" className="mt-4">
-              <div className="flex items-center gap-3">
-                <Input
-                  type="file"
-                  accept=".svg,image/svg+xml"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-                <Button variant="secondary" onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
-                  Choose file
-                </Button>
-              </div>
-              <div
-                onDrop={onDrop}
-                onDragOver={(e) => e.preventDefault()}
-                className="mt-3 rounded-md border border-dashed p-6 text-sm text-muted-foreground bg-secondary/40"
-                aria-label="Drag and drop SVG file here"
-              >
-                Drag & drop an SVG file here
-              </div>
-            </TabsContent>
-            <TabsContent value="paste" className="mt-4">
-              <div className="space-y-3">
-                <Textarea
-                  placeholder="Paste SVG markup here (including <svg>...</svg>)"
-                  className="min-h-[160px]"
-                  value={rawSvg}
-                  onChange={(e) => setRawSvg(e.target.value)}
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Switch id="transparent-bg" checked={transparentBg} onCheckedChange={setTransparentBg} />
-                      <label htmlFor="transparent-bg" className="text-sm text-muted-foreground">Transparent preview</label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch id="edit-mode" checked={editMode} onCheckedChange={(v) => { setEditMode(v); if (!v) clearSelection(); }} />
-                      <label htmlFor="edit-mode" className="text-sm text-muted-foreground">Edit mode (move/resize)</label>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" onClick={onPasteRender}><Hand className="mr-2" />Render</Button>
-                    <Button variant="outline" onClick={clearAll}><Trash2 className="mr-2" />Clear</Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
 
-          <div
-            ref={svgHostRef}
-            className={`relative rounded-lg border overflow-auto min-h-[320px] ${transparentBg ? 'bg-checker' : 'bg-card bg-grid-soft'}`}
-            onDrop={onDrop}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            {safeSvg ? (
-              <div className="p-4 svg-preview" dangerouslySetInnerHTML={{ __html: safeSvg }} />
-            ) : (
-              <div className="p-10 text-center text-muted-foreground">
-                Your SVG preview will appear here
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch id="transparent-bg" checked={transparentBg} onCheckedChange={setTransparentBg} />
+                <label htmlFor="transparent-bg" className="text-sm text-muted-foreground">Transparent preview</label>
               </div>
-            )}
-
-            {editMode && selectedEl && overlay && (
-              <div
-                data-overlay
-                className="absolute border-2 border-primary/70 rounded-sm pointer-events-auto"
-                style={{ left: overlay.left, top: overlay.top, width: overlay.width, height: overlay.height }}
-                title="Drag to move"
-              >
-                {/* Handles */}
-                {(["nw","n","ne","e","se","s","sw","w"] as const).map((h) => {
-                  const base = "absolute w-3 h-3 bg-primary rounded-sm shadow";
-                  const pos: Record<string, string> = {
-                    nw: "-left-1 -top-1 cursor-nw-resize",
-                    n: "left-1/2 -translate-x-1/2 -top-1 cursor-n-resize",
-                    ne: "-right-1 -top-1 cursor-ne-resize",
-                    e: "-right-1 top-1/2 -translate-y-1/2 cursor-e-resize",
-                    se: "-right-1 -bottom-1 cursor-se-resize",
-                    s: "left-1/2 -translate-x-1/2 -bottom-1 cursor-s-resize",
-                    sw: "-left-1 -bottom-1 cursor-sw-resize",
-                    w: "-left-1 top-1/2 -translate-y-1/2 cursor-w-resize",
-                  };
-                  return (
-                    <div key={h} data-handle={h} className={`${base} ${pos[h]}`} />
-                  );
-                })}
+              <div className="flex items-center gap-2">
+                <Switch id="edit-mode" checked={editMode} onCheckedChange={(v) => { setEditMode(v); if (!v) clearSelection(); }} />
+                <label htmlFor="edit-mode" className="text-sm text-muted-foreground">Edit mode (move/resize)</label>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <Switch id="auto-rewrite" checked={autoRewrite} onCheckedChange={setAutoRewrite} />
+                <label htmlFor="auto-rewrite" className="text-sm text-muted-foreground">Auto update code</label>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={rewriteSvgFromDom}><RefreshCw className="mr-2" />Rewrite code</Button>
+              <Button variant="outline" onClick={clearAll}><Trash2 className="mr-2" />Clear</Button>
+            </div>
           </div>
+
+          <ResizablePanelGroup direction="horizontal" className="w-full h[70vh] sm:h-[70vh] rounded-md border bg-background">
+            <ResizablePanel defaultSize={45} minSize={20} className="min-w-0">
+              {activeTab === "upload" ? (
+                <div className="h-full p-3 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="file"
+                      accept=".svg,image/svg+xml"
+                      onChange={(e) => handleFiles(e.target.files)}
+                    />
+                    <Button variant="secondary" onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
+                      Choose file
+                    </Button>
+                  </div>
+                  <div
+                    onDrop={onDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="rounded-md border border-dashed p-6 text-sm text-muted-foreground bg-secondary/40"
+                    aria-label="Drag and drop SVG file here"
+                  >
+                    Drag & drop an SVG file here
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  <div className="flex-1 min-h-0">
+                    <Textarea
+                      placeholder="Paste SVG markup here (including <svg>...</svg>)"
+                      className="h-full resize-none"
+                      value={rawSvg}
+                      onChange={(e) => setRawSvg(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-2 py-2">
+                    <Button variant="secondary" size="sm" onClick={onPasteRender}><Hand className="mr-2" />Render</Button>
+                  </div>
+                </div>
+              )}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel minSize={20} className="min-w-0">
+              <div
+                ref={svgHostRef}
+                className={`relative h-full overflow-auto ${transparentBg ? 'bg-checker' : 'bg-card bg-grid-soft'}`}
+                onDrop={onDrop}
+                onDragOver={(e) => e.preventDefault()}
+              >
+                <div className="absolute left-3 bottom-3 z-20 flex items-center gap-2 rounded-md border bg-background/80 backdrop-blur px-2 py-1">
+                  <Button size="sm" variant="outline" onClick={() => setZoom((z)=> Math.max(0.25, Number((z - 0.1).toFixed(2))))}>-</Button>
+                  <span className="text-xs w-12 text-center">{Math.round(zoom * 100)}%</span>
+                  <Button size="sm" variant="outline" onClick={() => setZoom((z)=> Math.min(4, Number((z + 0.1).toFixed(2))))}>+</Button>
+                </div>
+
+                {safeSvg ? (
+                  <div className="p-4">
+                    <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+                      <div className="svg-preview" dangerouslySetInnerHTML={{ __html: safeSvg }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-10 text-center text-muted-foreground">
+                    Your SVG preview will appear here
+                  </div>
+                )}
+
+                {editMode && selectedEl && overlay && (
+                  <div
+                    data-overlay
+                    className="absolute border-2 border-primary/70 rounded-sm pointer-events-auto"
+                    style={{ left: overlay.left, top: overlay.top, width: overlay.width, height: overlay.height }}
+                    title="Drag to move"
+                  >
+                    {(["nw","n","ne","e","se","s","sw","w"] as const).map((h) => {
+                      const base = "absolute w-3 h-3 bg-primary rounded-sm shadow";
+                      const pos: Record<string, string> = {
+                        nw: "-left-1 -top-1 cursor-nw-resize",
+                        n: "left-1/2 -translate-x-1/2 -top-1 cursor-n-resize",
+                        ne: "-right-1 -top-1 cursor-ne-resize",
+                        e: "-right-1 top-1/2 -translate-y-1/2 cursor-e-resize",
+                        se: "-right-1 -bottom-1 cursor-se-resize",
+                        s: "left-1/2 -translate-x-1/2 -bottom-1 cursor-s-resize",
+                        sw: "-left-1 -bottom-1 cursor-sw-resize",
+                        w: "-left-1 top-1/2 -translate-y-1/2 cursor-w-resize",
+                      };
+                      return (
+                        <div key={h} data-handle={h} className={`${base} ${pos[h]}`} />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
 
           <div className="flex flex-wrap items-center gap-2 justify-end">
             <Button variant="outline" onClick={copyCode} disabled={!safeSvg}><Copy />Copy</Button>
